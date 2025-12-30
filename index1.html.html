@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MEI Flow | Gestão Financeira Inteligente</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        :root {
+            --bg-light: #f4f5f7;
+            --card-bg: #ffffff;
+            --text-dark: #2d3436;
+            --text-gray: #636e72;
+            --border-color: #e8ecef;
+            --accent-gray: #b2bec3;
+            --positive: #10b981;
+            --positive-bg: #d1fae5;
+            --positive-glow: rgba(16, 185, 129, 0.2);
+            --negative: #ef4444;
+            --negative-bg: #fee2e2;
+            --negative-glow: rgba(239, 68, 68, 0.2);
+            --primary: #010b1b;
+            --primary-dark: #041b4b;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+            --shadow-lg: 0 10px 25px rgba(0,0,0,0.12);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: var(--text-dark);
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar com glassmorphism */
+        .sidebar {
+            width: 240px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 2rem 1rem;
+            position: fixed;
+            height: 100%;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.1);
+        }
+
+        .logo { 
+            font-size: 1.8rem; 
+            font-weight: 700; 
+            margin-bottom: 3rem; 
+            text-align: center;
+            letter-spacing: -0.5px;
+        }
+        .logo span { 
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        nav ul { list-style: none; }
+        nav li { 
+            padding: 1rem; 
+            border-radius: 12px; 
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(5px);
+            font-weight: 500; 
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+        
+        nav li:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        /* Content Area */
+        .main-content {
+            margin-left: 240px;
+            padding: 2rem;
+            width: calc(100% - 240px);
+            background: var(--bg-light);
+            min-height: 100vh;
+            border-radius: 30px 0 0 0;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            letter-spacing: -1px;
+        }
+
+        .header-actions { 
+            display: flex; 
+            gap: 1rem; 
+            align-items: center;
+        }
+
+        .filter-group {
+            position: relative;
+        }
+
+        .filter-group input {
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-family: inherit;
+            font-weight: 500;
+            font-size: 0.9rem;
+            background: white;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .filter-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .btn-pdf {
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-pdf::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn-pdf:hover::before {
+            left: 100%;
+        }
+
+        .btn-pdf:hover { 
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-pdf:active {
+            transform: translateY(-1px);
+        }
+
+        /* Cards modernos com micro-interações */
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 1.8rem;
+            border-radius: 20px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+            transform: scaleX(0);
+            transition: transform 0.4s ease;
+        }
+
+        .card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+            border-color: transparent;
+        }
+
+        .card h3 { 
+            font-size: 0.8rem; 
+            color: var(--text-gray); 
+            text-transform: uppercase; 
+            letter-spacing: 1.5px; 
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .card p { 
+            font-size: 2rem; 
+            font-weight: 700;
+            transition: all 0.3s ease;
+            letter-spacing: -0.5px;
+        }
+
+        .card .trend-indicator {
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover .trend-indicator {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Dashboard Grid */
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .card-bg { 
+            background: var(--card-bg); 
+            padding: 2rem; 
+            border-radius: 20px; 
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+        
+        .card-bg:hover {
+            box-shadow: var(--shadow-md);
+        }
+        
+        h2 { 
+            font-size: 1.2rem; 
+            margin-bottom: 1.5rem; 
+            color: var(--text-dark); 
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        h2::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: linear-gradient(180deg, var(--primary), var(--primary-dark));
+            border-radius: 2px;
+        }
+
+        /* Forms modernos */
+        .input-group { 
+            margin-bottom: 1.2rem;
+        }
+        
+        .input-group label { 
+            display: block; 
+            font-size: 0.85rem; 
+            margin-bottom: 0.6rem; 
+            color: var(--text-dark);
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+        
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 0.9rem 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            background: white;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .input-group input:focus, .input-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .input-group input:focus + label,
+        .input-group select:focus + label {
+            color: var(--primary);
+        }
+
+        .btn-save {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--shadow-md);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-save::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            font-size: 1.5rem;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .btn-save.success::after {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+
+        .btn-save:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-save:active {
+            transform: translateY(-1px);
+        }
+
+        /* Table moderna */
+        .table-responsive { 
+            overflow-x: auto;
+            border-radius: 12px;
+        }
+        
+        table { 
+            width: 100%; 
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 10px;
+        }
+        
+        table th { 
+            text-align: left; 
+            padding: 1.2rem; 
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            color: var(--text-dark);
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        table th:first-child {
+            border-radius: 12px 0 0 0;
+        }
+
+        table th:last-child {
+            border-radius: 0 12px 0 0;
+        }
+        
+        table td { 
+            padding: 1.2rem; 
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+
+        table tr {
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        table tbody tr:hover {
+            background: linear-gradient(90deg, rgba(59, 130, 246, 0.05), transparent);
+            transform: translateX(5px);
+        }
+
+        table tbody tr:last-child td:first-child {
+            border-radius: 0 0 0 12px;
+        }
+
+        table tbody tr:last-child td:last-child {
+            border-radius: 0 0 12px 0;
+        }
+
+        .btn-delete { 
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.2));
+            border: 1px solid var(--negative);
+            color: var(--negative); 
+            cursor: pointer; 
+            font-weight: 600; 
+            font-size: 0.8rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+        }
+
+        .btn-delete:hover {
+            background: var(--negative);
+            color: white;
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        /* Status colors com glow effect */
+        .text-positive { 
+            color: var(--positive);
+            font-weight: 600;
+        }
+        
+        .text-negative { 
+            color: var(--negative);
+            font-weight: 600;
+        }
+        
+        .bg-positive { 
+            background: linear-gradient(135deg, var(--positive-bg) 0%, #a7f3d0 100%) !important;
+            color: var(--positive) !important; 
+            border: 2px solid var(--positive) !important;
+            box-shadow: 0 8px 24px var(--positive-glow) !important;
+        }
+        
+        .bg-negative { 
+            background: linear-gradient(135deg, var(--negative-bg) 0%, #fecaca 100%) !important;
+            color: var(--negative) !important; 
+            border: 2px solid var(--negative) !important;
+            box-shadow: 0 8px 24px var(--negative-glow) !important;
+        }
+        
+        .chart-container { 
+            height: 320px; 
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        /* Contador animado */
+        @keyframes countUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .count-up {
+            animation: countUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Loading state */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .loading {
+            animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: white;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            opacity: 0;
+            transform: translateY(100px);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+            border-left: 4px solid var(--positive);
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .toast-icon {
+            width: 24px;
+            height: 24px;
+            background: var(--positive);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        /* Estilo específico para quando gerar o PDF */
+        .no-pdf { display: initial; }
+
+        @media (max-width: 1024px) {
+            .grid-layout { grid-template-columns: 1fr; }
+            .sidebar { display: none; }
+            .main-content { margin-left: 0; width: 100%; border-radius: 0; }
+            .summary-cards { grid-template-columns: 1fr; }
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-gray);
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar no-print">
+        <div class="logo">MEI<span>Flow</span></div>
+        <nav>
+            <ul>
+                <li>📊 Painel Principal</li>
+            </ul>
+        </nav>
+    </aside>
+
+    <main class="main-content" id="report-area">
+        <header>
+            <h1>Gestão MEI</h1>
+            <div class="header-actions">
+                <button onclick="generatePDF()" class="btn-pdf no-print">📄 Gerar Relatório PDF</button>
+                <div class="filter-group no-print">
+                    <input type="month" id="monthFilter" onchange="updateUI()">
+                </div>
+            </div>
+        </header>
+
+        <section class="summary-cards">
+            <div class="card">
+                <h3>💰 Recebimentos</h3>
+                <p id="totalIn">R$ 0,00</p>
+                <div class="trend-indicator text-positive">↗ Entradas do mês</div>
+            </div>
+            <div class="card">
+                <h3>💸 Saídas</h3>
+                <p id="totalOut">R$ 0,00</p>
+                <div class="trend-indicator text-negative">↘ Despesas do mês</div>
+            </div>
+            <div class="card" id="balanceCard">
+                <h3>📈 Saldo Líquido</h3>
+                <p id="totalBalance">R$ 0,00</p>
+                <div class="trend-indicator" id="balanceTrend">— Resultado mensal</div>
+            </div>
+        </section>
+
+        <div class="grid-layout">
+            <section class="section-form card-bg no-print">
+                <h2>Novo Lançamento</h2>
+                <form id="financeForm">
+                    <div class="input-group">
+                        <label>Descrição</label>
+                        <input type="text" id="desc" placeholder="Ex: Venda de serviço" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Valor (R$)</label>
+                        <input type="number" id="val" step="0.01" placeholder="0,00" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Tipo</label>
+                        <select id="type">
+                            <option value="in">💰 Recebimento (+)</option>
+                            <option value="out">💸 Saída (-)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Data</label>
+                        <input type="date" id="date" required>
+                    </div>
+                    <button type="submit" class="btn-save">Registrar Lançamento</button>
+                </form>
+            </section>
+
+            <section class="section-chart card-bg">
+                <h2>Gráfico de Fluxo</h2>
+                <div class="chart-container">
+                    <canvas id="financeChart"></canvas>
+                </div>
+            </section>
+        </div>
+
+        <section class="section-table card-bg">
+            <h2>Histórico Mensal</h2>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Descrição</th>
+                            <th>Data</th>
+                            <th>Valor</th>
+                            <th class="no-print">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionBody"></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <div class="toast" id="toast">
+        <div class="toast-icon">✓</div>
+        <span id="toastMessage">Lançamento registrado com sucesso!</span>
+    </div>
+
+    <script>
+        let transactions = JSON.parse(localStorage.getItem('mei_pro_data')) || [];
+        let myChart = null;
+
+        const form = document.getElementById('financeForm');
+        const monthFilter = document.getElementById('monthFilter');
+        const transactionBody = document.getElementById('transactionBody');
+
+        // Data atual para filtro
+        monthFilter.value = new Date().toISOString().substring(0, 7);
+
+        // Toast notification
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            toastMessage.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const dateVal = document.getElementById('date').value;
+            const item = {
+                id: Date.now(),
+                desc: document.getElementById('desc').value,
+                amount: parseFloat(document.getElementById('val').value),
+                type: document.getElementById('type').value,
+                date: dateVal,
+                monthRef: dateVal.substring(0, 7)
+            };
+            transactions.push(item);
+            localStorage.setItem('mei_pro_data', JSON.stringify(transactions));
+            
+            // Animação de sucesso no botão
+            const btn = document.querySelector('.btn-save');
+            btn.classList.add('success');
+            setTimeout(() => btn.classList.remove('success'), 600);
+            
+            showToast('✓ Lançamento registrado com sucesso!');
+            form.reset();
+            updateUI(true);
+        });
+
+        function deleteTransaction(id) {
+            if (confirm('Deseja realmente apagar este lançamento?')) {
+                transactions = transactions.filter(t => t.id !== id);
+                localStorage.setItem('mei_pro_data', JSON.stringify(transactions));
+                showToast('🗑️ Lançamento removido');
+                updateUI(true);
+            }
+        }
+
+        function updateUI(animate = false) {
+            const selectedMonth = monthFilter.value;
+            const filtered = transactions.filter(t => t.monthRef === selectedMonth);
+            
+            const inc = filtered.filter(t => t.type === 'in').reduce((acc, t) => acc + t.amount, 0);
+            const exp = filtered.filter(t => t.type === 'out').reduce((acc, t) => acc + t.amount, 0);
+            const bal = inc - exp;
+
+            // Atualiza valores com animação
+            const totalInEl = document.getElementById('totalIn');
+            const totalOutEl = document.getElementById('totalOut');
+            const totalBalanceEl = document.getElementById('totalBalance');
+
+            if (animate) {
+                [totalInEl, totalOutEl, totalBalanceEl].forEach(el => {
+                    el.classList.add('count-up');
+                    setTimeout(() => el.classList.remove('count-up'), 600);
+                });
+            }
+
+            totalInEl.innerText = inc.toLocaleString('pt-br', {style:'currency', currency:'BRL'});
+            totalOutEl.innerText = exp.toLocaleString('pt-br', {style:'currency', currency:'BRL'});
+            totalBalanceEl.innerText = bal.toLocaleString('pt-br', {style:'currency', currency:'BRL'});
+
+            // Atualiza card de saldo com indicador de tendência
+            const card = document.getElementById('balanceCard');
+            const balanceTrend = document.getElementById('balanceTrend');
+            card.className = 'card';
+            
+            if(bal > 0) {
+                card.classList.add('bg-positive');
+                balanceTrend.className = 'trend-indicator text-positive';
+                balanceTrend.textContent = '↗ Saldo positivo';
+            } else if(bal < 0) {
+                card.classList.add('bg-negative');
+                balanceTrend.className = 'trend-indicator text-negative';
+                balanceTrend.textContent = '↘ Atenção: saldo negativo';
+            } else {
+                balanceTrend.className = 'trend-indicator';
+                balanceTrend.textContent = '— Saldo zerado';
+            }
+
+            // Renderiza tabela
+            transactionBody.innerHTML = '';
+            if (filtered.length === 0) {
+                transactionBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="empty-state">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="12" y1="8" x2="12" y2="12"/>
+                                <line x1="12" y1="16" x2="12.01" y2="16"/>
+                            </svg>
+                            <p>Nenhum lançamento encontrado para este mês</p>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                filtered.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach((t, index) => {
+                    const tr = document.createElement('tr');
+                    tr.style.animationDelay = `${index * 0.05}s`;
+                    tr.innerHTML = `
+                        <td>${t.desc}</td>
+                        <td>${t.date.split('-').reverse().join('/')}</td>
+                        <td class="${t.type === 'in' ? 'text-positive' : 'text-negative'}">
+                            ${t.type === 'in' ? '+ ' : '- '}${t.amount.toLocaleString('pt-br', {style:'currency', currency:'BRL'})}
+                        </td>
+                        <td class="no-print"><button class="btn-delete" onclick="deleteTransaction(${t.id})">🗑️ Apagar</button></td>
+                    `;
+                    transactionBody.appendChild(tr);
+                });
+            }
+
+            renderChart(inc, exp);
+        }
+
+        function renderChart(inc, exp) {
+            const ctx = document.getElementById('financeChart').getContext('2d');
+            
+            if (myChart) {
+                // Atualiza dados do gráfico existente com animação suave
+                myChart.data.datasets[0].data = [inc, exp];
+                myChart.update('active');
+            } else {
+                // Cria novo gráfico de pizza
+                myChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: ['Entradas', 'Saídas'],
+                        datasets: [{
+                            data: [inc, exp],
+                            backgroundColor: [
+                                'rgba(16, 185, 129, 0.8)',
+                                'rgba(239, 68, 68, 0.8)'
+                            ],
+                            borderColor: ['#10b981', '#ef4444'],
+                            borderWidth: 3,
+                            hoverOffset: 15,
+                            hoverBorderWidth: 4,
+                            hoverBackgroundColor: [
+                                'rgba(16, 185, 129, 1)',
+                                'rgba(239, 68, 68, 1)'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top', 
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Inicializa a interface ao carregar
+        updateUI();
+    </script>
+</body>
+</html>
